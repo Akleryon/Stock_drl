@@ -12,14 +12,8 @@ from  module.yahoodownloader import YahooDownloader
 from module.preprocessor import FeatureEngineer, data_split
 
 from module.config import (
-    DATA_SAVE_DIR,
-    TRAINED_MODEL_DIR,
-    TENSORBOARD_LOG_DIR,
-    RESULTS_DIR,
     TRAIN_START_DATE,
     TRAIN_END_DATE,
-    TEST_START_DATE,
-    TEST_END_DATE,
     TRADE_START_DATE,
     TRADE_END_DATE,
 )
@@ -55,7 +49,7 @@ def get_processed_data(interval, ticker, indicators):
     trade = data_split(processed_full, TRADE_START_DATE,TRADE_END_DATE)
 
     stock_dimension = len(train.tic.unique())
-    state_space = 1 + 2*stock_dimension + len(INDICATORS)*stock_dimension
+    state_space = 1 + 2*stock_dimension + len(indicators)*stock_dimension
     print(f"Stock Dimension: {stock_dimension}, State Space: {state_space}")
     
     return train, trade, stock_dimension, state_space
