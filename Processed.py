@@ -51,5 +51,7 @@ def get_processed_data(interval, ticker, indicators):
     stock_dimension = len(train.tic.unique())
     state_space = 1 + 2*stock_dimension + len(indicators)*stock_dimension
     print(f"Stock Dimension: {stock_dimension}, State Space: {state_space}")
+    buy_cost_list = sell_cost_list = [0.001] * stock_dimension
+    num_stock_shares = [0] * stock_dimension
     
-    return train, trade, stock_dimension, state_space
+    return train, trade, stock_dimension, state_space, buy_cost_list, num_stock_shares
