@@ -18,7 +18,7 @@ from module.config import (
     TRADE_END_DATE,
 )
 
-def get_processed_data(interval, ticker, indicators):
+def get_processed_data(ticker, indicators):
 
     fe = FeatureEngineer(
                         use_technical_indicator=True,
@@ -27,11 +27,13 @@ def get_processed_data(interval, ticker, indicators):
                         use_turbulence=True,
                         user_defined_feature = False)
 
+    print("========== DOWNLOADING ==========")
 
     df = YahooDownloader(start_date = TRAIN_START_DATE,
                         end_date = TRADE_END_DATE,
-                        ticker_list = ticker,
-                        interval=interval).fetch_data()
+                        ticker_list = ticker).fetch_data()
+
+    print("========== PROCESSING ==========")
 
     processed = fe.preprocess_data(df)
     list_ticker = processed["tic"].unique().tolist()
@@ -51,7 +53,9 @@ def get_processed_data(interval, ticker, indicators):
     stock_dimension = len(train.tic.unique())
     state_space = 1 + 2*stock_dimension + len(indicators)*stock_dimension
     print(f"Stock Dimension: {stock_dimension}, State Space: {state_space}")
-    buy_cost_list = sell_cost_list = [0.001] * stock_dimension
+    sell_cost_list = [0.001] * stock_dimension
     num_stock_shares = [0] * stock_dimension
+
+    print("========== PROCESSING OVER ==========")
     
-    return train, trade, stock_dimension, state_space, buy_cost_list, num_stock_shares
+    return mvo_df, train, trade, stock_dimension, state_space, sell_cost_list, num_stock_shares, processed

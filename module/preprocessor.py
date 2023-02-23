@@ -7,9 +7,14 @@ import numpy as np
 import pandas as pd
 from stockstats import StockDataFrame as Sdf
 
-from finrl import config
-from finrl.meta.preprocessor.yahoodownloader import YahooDownloader
-
+from module import config
+from module.yahoodownloader import YahooDownloader
+from module.config import (
+    TRAIN_START_DATE,
+    TRAIN_END_DATE,
+    TRADE_START_DATE,
+    TRADE_END_DATE,
+)
 
 def load_dataset(*, file_name: str) -> pd.DataFrame:
     """
@@ -191,7 +196,7 @@ class FeatureEngineer:
         """
         df = data.copy()
         df_vix = YahooDownloader(
-            start_date=df.date.min(), end_date=df.date.max(), ticker_list=["^VIX"], interval='5m'
+            start_date=TRAIN_START_DATE, end_date=TRADE_END_DATE, ticker_list=["^VIX"]
         ).fetch_data()
         vix = df_vix[["date", "close"]]
         vix.columns = ["date", "vix"]

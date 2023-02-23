@@ -27,11 +27,10 @@ class YahooDownloader:
 
     """
 
-    def __init__(self, start_date: str, end_date: str, ticker_list: list, interval: str):
+    def __init__(self, start_date: str, end_date: str, ticker_list: list):
         self.start_date = start_date
         self.end_date = end_date
         self.ticker_list = ticker_list
-        self.interval = interval
 
     def fetch_data(self, proxy=None) -> pd.DataFrame:
         """Fetches data from Yahoo API
@@ -48,7 +47,7 @@ class YahooDownloader:
         data_df = pd.DataFrame()
         for tic in self.ticker_list:
             temp_df = yf.download(
-                tic, start=self.start_date, end=self.end_date, proxy=proxy, interval=self.interval
+                tic, start=self.start_date, end=self.end_date, proxy=proxy,
             )
             temp_df["tic"] = tic
             data_df = data_df.append(temp_df)
@@ -75,7 +74,7 @@ class YahooDownloader:
         # create day of the week column (monday = 0)
         data_df["day"] = data_df["date"].dt.dayofweek
         # convert date to standard string format, easy to filter
-        data_df["date"] = data_df.date.apply(lambda x: x.strftime("%Y-%m-%d:%H:%M"))
+        data_df["date"] = data_df.date.apply(lambda x: x.strftime("%Y-%m-%d"))
         # drop missing data
         data_df = data_df.dropna()
         data_df = data_df.reset_index(drop=True)

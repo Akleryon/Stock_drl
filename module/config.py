@@ -11,8 +11,8 @@ RESULTS_DIR = "results"
 TRAIN_START_DATE = '2009-01-01'
 TRAIN_END_DATE = '2020-07-01'
 
-TEST_START_DATE = datetime.datetime.now
-TEST_END_DATE = datetime.datetime.now
+TEST_START_DATE = str(datetime.datetime.now)
+TEST_END_DATE =str(datetime.datetime.now)
 
 TRADE_START_DATE = '2020-07-01'
 TRADE_END_DATE = '2023-02-10'
