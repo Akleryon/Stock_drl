@@ -17,6 +17,7 @@ from Processed import get_processed_data
 
 from finrl.plot import backtest_stats, get_baseline
 
+from module import yahoodownloader
 from module.efficient_frontier import EfficientFrontier
 from module import helper
 from module.config_tickers import DOW_30_TICKER
@@ -57,6 +58,8 @@ def modelling():
   tic = fst['tic'].tolist()
 
   mvo = pd.DataFrame()
+
+  Models = []
 
   for k in range(len(tic)):
     mvo[tic[k]] = 0
@@ -202,15 +205,15 @@ def modelling():
   #input k-portfolio 1 dataset comprising 15 stocks
   # StockFileName = './DJIA_Apr112014_Apr112019_kpf1.csv'
 
-  Rows = 3551  #excluding header
+  Rows = int(len(mvo_df)/29)  #excluding header
   Columns = 15  #excluding date
   portfolioSize = 29 #set portfolio sizedatetime..tolist()
   # print(assetLabels)
 
   #extract asset prices
   # StockData = df.iloc[0:, 1:]
-  StockData = mvo.head(mvo.shape[0]-658)
-  TradeData = mvo.tail(658)
+  StockData = mvo.head(mvo.shape[0]-int(len(trade)))
+  TradeData = mvo.tail(int(len(trade)))
   # df.head()
   TradeData.to_numpy()
 
@@ -259,21 +262,59 @@ def modelling():
   plt.rcParams["figure.figsize"] = (15,5)
   plt.figure()
   result.plot()
-  plt.savefig("trained_models/models_" + str(datetime.datetime.now()) + ".jpg")
+  plt.savefig("trained_models/models_" + ".jpg")
+
+  MVO_result['account_value'] = MVO_result['Mean Var']
+  MVO_result = MVO_result.drop("Mean Var", axis=1)
+  MVO_result.index.name='date'
+  MVO_result['date'] = MVO_result.index
   
-  baseline_df = get_baseline(
-        ticker="^DJI", 
-        start = TRADE_START_DATE,
-        end = TRADE_END_DATE)
+  now = datetime.datetime.now().strftime('%Y%m%d-%Hh%M')
 
-  print("==============Compare to DJIA===========")
-  # S&P 500: ^GSPC
-  # Dow Jones Index: ^DJI
-  # NASDAQ 100: ^NDX
-  helper.backtest_plot(df_account_value_sac, 
-                baseline_ticker = '^DJI', 
-                baseline_start = TRADE_START_DATE,
-                baseline_end = TRADE_END_DATE)
+  perf_stats_sac = helper.backtest_stats(account_value = df_account_value_sac)
+  perf_stats_sac = pd.DataFrame(perf_stats_sac)
 
-  return trained_a2c, trained_ppo, trained_ddpg, trained_td3, trained_sac
+  perf_stats_ddpg = helper.backtest_stats(account_value = df_account_value_ddpg)
+  perf_stats_ddpg = pd.DataFrame(perf_stats_ddpg)
+
+  perf_stats_ppo = helper.backtest_stats(account_value = df_account_value_ppo)
+  perf_stats_ppo = pd.DataFrame(perf_stats_ppo)
+
+  perf_stats_td3 = helper.backtest_stats(account_value = df_account_value_td3)
+  perf_stats_td3 = pd.DataFrame(perf_stats_td3)
+
+  perf_stats_a2c = helper.backtest_stats(account_value = df_account_value_a2c)
+  perf_stats_a2c = pd.DataFrame(perf_stats_a2c)
+
+  perf_stats_mvo = helper.backtest_stats(account_value = MVO_result)
+  perf_stats_mvo = pd.DataFrame(perf_stats_mvo)
+
+  baseline_df = yahoodownloader.YahooDownloader(
+        ticker_list =["^DJI"], 
+        start_date = TRADE_START_DATE,
+        end_date = TRADE_END_DATE).fetch_data()
+
+  Annual_return_sac = perf_stats_sac.T['Annual return'][0]
+  Annual_return_ppo = perf_stats_ppo.T['Annual return'][0]
+  Annual_return_td3 = perf_stats_td3.T['Annual return'][0]
+  Annual_return_ddpg = perf_stats_ddpg.T['Annual return'][0]
+  Annual_return_a2c = perf_stats_a2c.T['Annual return'][0]
+  Annual_return_mvo = perf_stats_mvo.T['Annual return'][0]
+
+  if Annual_return_sac >= Annual_return_mvo:
+      Models.append(trained_sac)
+        
+  elif Annual_return_a2c >= Annual_return_mvo:
+      Models.append(trained_a2c)
+
+  elif Annual_return_ddpg >= Annual_return_mvo:
+       Models.append(trained_ddpg)
+
+  elif Annual_return_ppo >= Annual_return_mvo:
+        Models.append(trained_ppo)
+
+  elif Annual_return_td3 >= Annual_return_mvo:
+        Models.append(trained_td3)
+
+  return Models
 

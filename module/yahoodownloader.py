@@ -31,6 +31,7 @@ class YahooDownloader:
         self.start_date = start_date
         self.end_date = end_date
         self.ticker_list = ticker_list
+        self.interval = '1d'
 
     def fetch_data(self, proxy=None) -> pd.DataFrame:
         """Fetches data from Yahoo API
@@ -47,7 +48,7 @@ class YahooDownloader:
         data_df = pd.DataFrame()
         for tic in self.ticker_list:
             temp_df = yf.download(
-                tic, start=self.start_date, end=self.end_date, proxy=proxy,
+                tic, start=self.start_date, end=self.end_date, proxy=proxy
             )
             temp_df["tic"] = tic
             data_df = data_df.append(temp_df)

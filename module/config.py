@@ -2,6 +2,11 @@
 from __future__ import annotations
 import datetime 
 
+
+YESTERDAY = datetime.date.today() - datetime.timedelta(days=1)
+DELTA = -(datetime.datetime.strptime('2009-01-01', '%Y-%M-%d') - YESTERDAY).days
+
+
 DATA_SAVE_DIR = "datasets"
 TRAINED_MODEL_DIR = "trained_models"
 TENSORBOARD_LOG_DIR = "tensorboard_log"
@@ -9,13 +14,13 @@ RESULTS_DIR = "results"
 
 # date format: '%Y-%m-%d'
 TRAIN_START_DATE = '2009-01-01'
-TRAIN_END_DATE = '2020-07-01'
+TRAIN_END_DATE = str(YESTERDAY - datetime.timedelta(days=DELTA*0.2))
 
 TEST_START_DATE = str(datetime.datetime.now)
 TEST_END_DATE =str(datetime.datetime.now)
 
-TRADE_START_DATE = '2020-07-01'
-TRADE_END_DATE = '2023-02-10'
+TRADE_START_DATE = str(YESTERDAY - datetime.timedelta(days=DELTA*0.2))
+TRADE_END_DATE = str(YESTERDAY)
 
 # stockstats technical indicator column names
 # check https://pypi.org/project/stockstats/ for different names

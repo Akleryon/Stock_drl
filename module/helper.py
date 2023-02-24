@@ -4,7 +4,7 @@ import numpy as np
 from copy import deepcopy
 import pyfolio
 import pandas as pd
-from finrl.plot import backtest_stats, backtest_plot, get_daily_return, get_baseline
+from module.yahoodownloader import YahooDownloader
 
 #function obtains maximal return portfolio using linear programming
 
@@ -83,19 +83,35 @@ def StockReturnsComputing(StockPrice, Rows, Columns):
       
   return StockReturn
 
+
+def get_baseline(ticker, start, end):
+    return YahooDownloader(
+        start_date=start, end_date=end, ticker_list=ticker, interval='1d'
+    ).fetch_data()
+
+
+def get_daily_return(df, value_col_name="account_value"):
+    df = deepcopy(df)
+    df["daily_return"] = df[value_col_name].pct_change(1)
+    df["date"] = pd.to_datetime(df["date"])
+    df.set_index("date", inplace=True, drop=True)
+    df.index = df.index.tz_localize("UTC")
+    return pd.Series(df["daily_return"], index=df.index)
+
 def backtest_plot(
     account_value,
     baseline_start,
     baseline_end,
     baseline_ticker="^DJI",
     value_col_name="account_value",
+    interval = '1d'
 ):
     df = deepcopy(account_value)
     df["date"] = pd.to_datetime(df["date"])
     test_returns = get_daily_return(df, value_col_name=value_col_name)
 
     baseline_df = get_baseline(
-        ticker=baseline_ticker, start=baseline_start, end=baseline_end
+        ticker=baseline_ticker, start=baseline_start, end=baseline_end, interval=interval
     )
 
     baseline_df["date"] = pd.to_datetime(baseline_df["date"], format="%Y-%m-%d")
@@ -107,3 +123,14 @@ def backtest_plot(
         pyfolio.create_full_tear_sheet(
             returns=test_returns, benchmark_rets=baseline_returns, set_context=False
         )
+
+def backtest_stats(account_value, value_col_name="account_value"):
+    dr_test = get_daily_return(account_value, value_col_name=value_col_name)
+    perf_stats_all = pyfolio.timeseries.perf_stats(
+        returns=dr_test,
+        positions=None,
+        transactions=None,
+        turnover_denom="AGB",
+    )
+    print(perf_stats_all)
+    return perf_stats_all

@@ -105,9 +105,6 @@ class DRLAgent:
             tb_log_name=tb_log_name,
             callback=TensorboardCallback(),
         )
-        model.save(
-            f"{config.TRAINED_MODEL_DIR}/{tb_log_name}_{datetime.datetime.now()}"
-            )
         return model
 
     @staticmethod
