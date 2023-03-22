@@ -58,4 +58,4 @@ def get_processed_data(ticker, indicators):
 
     print("========== PROCESSING OVER ==========")
     
-    return mvo_df, train, trade, stock_dimension, state_space, sell_cost_list, num_stock_shares, processed
+    return mvo_df, train, trade, stock_dimension, state_space, sell_cost_list, num_stock_shares, processed_full

@@ -2,8 +2,8 @@
 from __future__ import annotations
 import datetime 
 
-
-YESTERDAY = datetime.date.today() - datetime.timedelta(days=1)
+TODAY = datetime.datetime.today()
+YESTERDAY = datetime.datetime.today() - datetime.timedelta(days=1)
 DELTA = -(datetime.datetime.strptime('2009-01-01', '%Y-%M-%d') - YESTERDAY).days
 
 
@@ -14,13 +14,13 @@ RESULTS_DIR = "results"
 
 # date format: '%Y-%m-%d'
 TRAIN_START_DATE = '2009-01-01'
-TRAIN_END_DATE = str(YESTERDAY - datetime.timedelta(days=DELTA*0.2))
+TRAIN_END_DATE = str(YESTERDAY.date() - datetime.timedelta(days=DELTA*0.2))
 
 TEST_START_DATE = str(datetime.datetime.now)
 TEST_END_DATE =str(datetime.datetime.now)
 
-TRADE_START_DATE = str(YESTERDAY - datetime.timedelta(days=DELTA*0.2))
-TRADE_END_DATE = str(YESTERDAY)
+TRADE_START_DATE = str(YESTERDAY.date() - datetime.timedelta(days=DELTA*0.2))
+TRADE_END_DATE = str(YESTERDAY.date())
 
 # stockstats technical indicator column names
 # check https://pypi.org/project/stockstats/ for different names
@@ -76,7 +76,7 @@ TIME_ZONE_SELFDEFINED = "xxx"  # If neither of the above is your time zone, you 
 USE_TIME_ZONE_SELFDEFINED = 0  # 0 (default) or 1 (use the self defined)
 
 # parameters for data sources
-ALPACA_API_KEY = "xxx"  # your ALPACA_API_KEY
-ALPACA_API_SECRET = "xxx"  # your ALPACA_API_SECRET
+ALPACA_API_SECRET = "DOoJVx2cLalJf9aTmWZNZrzcg0E4gVS1g5wfYros"  # your ALPACA_API_SECRET
+ALPACA_API_KEY = "PKHPFLNDTI958K2SZXS4" # your ALPACA_API_KEY
 ALPACA_API_BASE_URL = "https://paper-api.alpaca.markets"  # alpaca url
 BINANCE_BASE_URL = "https://data.binance.vision/"  # binance url

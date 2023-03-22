@@ -17,6 +17,7 @@ from Processed import get_processed_data
 
 from finrl.plot import backtest_stats, get_baseline
 
+from module.yahoodownloader import YahooDownloader
 from module import yahoodownloader
 from module.efficient_frontier import EfficientFrontier
 from module import helper
@@ -50,7 +51,7 @@ def modelling():
   if_using_td3 = True
   if_using_sac = True
 
-  mvo_df, train, trade, stock_dimension, state_space, sell_cost_list, num_stock_shares, processed = get_processed_data(ticker= DOW_30_TICKER, indicators=INDICATORS)
+  mvo_df, train, trade, stock_dimension, state_space, sell_cost_list, num_stock_shares, df = get_processed_data(ticker= DOW_30_TICKER, indicators=INDICATORS)
   buy_cost_list = sell_cost_list
 
   fst = mvo_df
@@ -58,8 +59,6 @@ def modelling():
   tic = fst['tic'].tolist()
 
   mvo = pd.DataFrame()
-
-  Models = []
 
   for k in range(len(tic)):
     mvo[tic[k]] = 0
@@ -142,7 +141,7 @@ def modelling():
   if if_using_td3:
     # set up logger
     tmp_path = RESULTS_DIR + '/td3'
-    newmodel_sac = agent.get_model("sac",model_kwargs = SAC_PARAMS)
+    model_td3 = agent.get_model("sac",model_kwargs = SAC_PARAMS)
 
   if if_using_sac:
     # set up logger
@@ -180,68 +179,23 @@ def modelling():
       model=trained_a2c, 
       environment = e_trade_gym)
 
-  df_account_value_ddpg, df_actions_a2c = DRLAgent.DRL_prediction(
+  df_account_value_ddpg, df_actions_ddpg = DRLAgent.DRL_prediction(
       model=trained_ddpg, 
       environment = e_trade_gym)
 
-  df_account_value_sac, df_actions_a2c = DRLAgent.DRL_prediction(
+  df_account_value_sac, df_actions_sac = DRLAgent.DRL_prediction(
       model=trained_sac, 
       environment = e_trade_gym)
 
-  df_account_value_ppo, df_actions_a2c = DRLAgent.DRL_prediction(
+  df_account_value_ppo, df_actions_ppo = DRLAgent.DRL_prediction(
       model=trained_ppo, 
       environment = e_trade_gym)
 
-  df_account_value_td3, df_actions_a2c = DRLAgent.DRL_prediction(
+  df_account_value_td3, df_actions_td3 = DRLAgent.DRL_prediction(
       model=trained_td3, 
       environment = e_trade_gym)
 
   print("========== COMPARAISON ==========")
-
-  # Obtain optimal portfolio sets that maximize return and minimize risk
-
-  #Dependencies
-
-  #input k-portfolio 1 dataset comprising 15 stocks
-  # StockFileName = './DJIA_Apr112014_Apr112019_kpf1.csv'
-
-  Rows = int(len(mvo_df)/29)  #excluding header
-  Columns = 15  #excluding date
-  portfolioSize = 29 #set portfolio sizedatetime..tolist()
-  # print(assetLabels)
-
-  #extract asset prices
-  # StockData = df.iloc[0:, 1:]
-  StockData = mvo.head(mvo.shape[0]-int(len(trade)))
-  TradeData = mvo.tail(int(len(trade)))
-  # df.head()
-  TradeData.to_numpy()
-
-  #compute asset returns
-  arStockPrices = np.asarray(StockData)
-  [Rows, Cols]=arStockPrices.shape
-  arReturns = helper.StockReturnsComputing(arStockPrices, Rows, Cols)
-
-
-  #compute mean returns and variance covariance matrix of returns
-  meanReturns = np.mean(arReturns, axis = 0)
-  covReturns = np.cov(arReturns, rowvar=False)
-  
-  #set precision for printing results
-  np.set_printoptions(precision=3, suppress = True)
-
-  #display mean returns and variance-covariance matrix of returns
-  print('Mean returns of assets in k-portfolio 1\n', meanReturns)
-  print('Variance-Covariance matrix of returns\n', covReturns)
-
-  ef_mean = EfficientFrontier(meanReturns, covReturns, weight_bounds=(0, 0.5))
-  raw_weights_mean = ef_mean.max_sharpe()
-  cleaned_weights_mean = ef_mean.clean_weights()
-  mvo_weights = np.array([1000000 * cleaned_weights_mean[i] for i in range(29)])
-  LastPrice = np.array([1/p for p in StockData.tail(1).to_numpy()[0]])
-  Initial_Portfolio = np.multiply(mvo_weights, LastPrice)
-  Portfolio_Assets = TradeData @ Initial_Portfolio
-  MVO_result = pd.DataFrame(Portfolio_Assets, columns=["Mean Var"])
 
   df_result_a2c = df_account_value_a2c.set_index(df_account_value_a2c.columns[0])
   df_result_ddpg = df_account_value_ddpg.set_index(df_account_value_ddpg.columns[0])
@@ -253,8 +207,7 @@ def modelling():
   result = pd.merge(result, df_result_td3, left_index=True, right_index=True)
   result = pd.merge(result, df_result_ppo, left_index=True, right_index=True)
   result = pd.merge(result, df_result_sac, left_index=True, right_index=True)
-  result = pd.merge(result, MVO_result, left_index=True, right_index=True)
-  result.columns = ['a2c', 'ddpg', 'td3', 'ppo', 'sac', 'mean var']
+  result.columns = ['a2c', 'ddpg', 'td3', 'ppo', 'sac']
 
   print("========== SAVING MODELS and GRAPH ==========")
 
@@ -263,11 +216,6 @@ def modelling():
   plt.figure()
   result.plot()
   plt.savefig("trained_models/models_" + ".jpg")
-
-  MVO_result['account_value'] = MVO_result['Mean Var']
-  MVO_result = MVO_result.drop("Mean Var", axis=1)
-  MVO_result.index.name='date'
-  MVO_result['date'] = MVO_result.index
   
   now = datetime.datetime.now().strftime('%Y%m%d-%Hh%M')
 
@@ -286,35 +234,33 @@ def modelling():
   perf_stats_a2c = helper.backtest_stats(account_value = df_account_value_a2c)
   perf_stats_a2c = pd.DataFrame(perf_stats_a2c)
 
-  perf_stats_mvo = helper.backtest_stats(account_value = MVO_result)
-  perf_stats_mvo = pd.DataFrame(perf_stats_mvo)
-
-  baseline_df = yahoodownloader.YahooDownloader(
+  baseline_df = YahooDownloader(
         ticker_list =["^DJI"], 
         start_date = TRADE_START_DATE,
         end_date = TRADE_END_DATE).fetch_data()
+
+  stats = helper.backtest_stats(baseline_df, value_col_name = 'close')
 
   Annual_return_sac = perf_stats_sac.T['Annual return'][0]
   Annual_return_ppo = perf_stats_ppo.T['Annual return'][0]
   Annual_return_td3 = perf_stats_td3.T['Annual return'][0]
   Annual_return_ddpg = perf_stats_ddpg.T['Annual return'][0]
   Annual_return_a2c = perf_stats_a2c.T['Annual return'][0]
-  Annual_return_mvo = perf_stats_mvo.T['Annual return'][0]
+  Annual_return = stats[0]
 
-  if Annual_return_sac >= Annual_return_mvo:
-      Models.append(trained_sac)
-        
-  elif Annual_return_a2c >= Annual_return_mvo:
-      Models.append(trained_a2c)
+  print("===== BEST MODEL =======")
 
-  elif Annual_return_ddpg >= Annual_return_mvo:
-       Models.append(trained_ddpg)
-
-  elif Annual_return_ppo >= Annual_return_mvo:
-        Models.append(trained_ppo)
-
-  elif Annual_return_td3 >= Annual_return_mvo:
-        Models.append(trained_td3)
-
-  return Models
+  d = {'sac':Annual_return_sac, 'a2c':Annual_return_a2c, 'td3':Annual_return_td3, 'ddpg': Annual_return_ddpg, 'ppo':Annual_return_ppo}
+  best_model = max(d.items(), key=lambda i: i[1])
+  
+  if best_model[0] == 'a2c':
+    return trained_a2c, env_kwargs
+  elif best_model[0] == 'sac':
+    return trained_sac, env_kwargs
+  elif best_model[0] == 'td3':
+    return trained_td3, env_kwargs
+  elif best_model[0] == 'ddpg':
+    return trained_ddpg, env_kwargs
+  elif best_model[0] == 'ppo':
+    return trained_ppo, env_kwargs
 

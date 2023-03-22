@@ -76,7 +76,7 @@ def MinimizeRiskConstr(MeanReturns, CovarReturns, PortfolioSize, R):
   
 def StockReturnsComputing(StockPrice, Rows, Columns): 
   import numpy as np 
-  StockReturn = np.zeros([Rows-1, Columns]) 
+  StockReturn = np.zeros([Rows, Columns]) 
   for j in range(Columns):        # j: Assets 
     for i in range(Rows-1):     # i: Daily Prices 
       StockReturn[i,j]=((StockPrice[i+1, j]-StockPrice[i,j])/StockPrice[i,j])* 100 
@@ -86,7 +86,7 @@ def StockReturnsComputing(StockPrice, Rows, Columns):
 
 def get_baseline(ticker, start, end):
     return YahooDownloader(
-        start_date=start, end_date=end, ticker_list=ticker, interval='1d'
+        start_date=start, end_date=end, ticker_list=ticker
     ).fetch_data()
 
 
@@ -103,16 +103,15 @@ def backtest_plot(
     baseline_start,
     baseline_end,
     baseline_ticker="^DJI",
-    value_col_name="account_value",
-    interval = '1d'
+    value_col_name="account_value"
 ):
     df = deepcopy(account_value)
     df["date"] = pd.to_datetime(df["date"])
     test_returns = get_daily_return(df, value_col_name=value_col_name)
 
-    baseline_df = get_baseline(
-        ticker=baseline_ticker, start=baseline_start, end=baseline_end, interval=interval
-    )
+    baseline_df = YahooDownloader(
+        start_date=baseline_start, end_date=baseline_end, ticker_list=baseline_ticker
+    ).fetch_data()
 
     baseline_df["date"] = pd.to_datetime(baseline_df["date"], format="%Y-%m-%d")
     baseline_df = pd.merge(df[["date"]], baseline_df, how="left", on="date")
