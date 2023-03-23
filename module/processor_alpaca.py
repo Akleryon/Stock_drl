@@ -278,6 +278,10 @@ class AlpacaProcessor:
             if if_first_time:
                 price_array = df[df.tic == tic][["close"]].values
                 tech_array = df[df.tic == tic][tech_indicator_list].values
+                volume_array = df[df.tic == tic][["volume"]].values
+                high_array = df[df.tic == tic][["high"]].values
+                low_array = df[df.tic == tic][["low"]].values
+                open_array = df[df.tic == tic][["open"]].values
                 if if_vix:
                     turbulence_array = df[df.tic == tic]["VIXY"].values
                 else:
@@ -290,8 +294,24 @@ class AlpacaProcessor:
                 tech_array = np.hstack(
                     [tech_array, df[df.tic == tic][tech_indicator_list].values]
                 )
+                volume_array = np.hstack(
+                    [volume_array , df[df.tic == tic][["volume"]].values]
+                )
+
+                high_array = np.hstack(
+                    [high_array , df[df.tic == tic][["high"]].values]
+                )
+                
+                low_array = np.hstack(
+                    [low_array , df[df.tic == tic][["low"]].values]
+                )
+
+                open_array = np.hstack(
+                    [open_array , df[df.tic == tic][["open"]].values]
+                )
+
         #        print("Successfully transformed into array")
-        return price_array, tech_array, turbulence_array
+        return open_array, high_array, low_array, price_array, tech_array, turbulence_array
 
     def get_trading_days(self, start, end):
         nyse = tc.get_calendar("NYSE")
@@ -309,14 +329,14 @@ class AlpacaProcessor:
     ) -> pd.DataFrame:
         data_df = pd.DataFrame()
         for tic in ticker_list:
-            barset = self.api.get_bars([tic], time_interval, limit=limit).df  # [tic]
+            barset = self.api.get_bars(tic, time_interval, limit=limit).df  # [tic]
             barset["tic"] = tic
             barset = barset.reset_index()
-            data_df = pd.concat([data_df, barset])
+            data_df = pd.concat([barset, data_df])
 
-        data_df = data_df.reset_index(drop=True)
-        start_time = data_df.timestamp.min()
-        end_time = data_df.timestamp.max()
+        data_df = data_df.reset_index()
+        start_time = data_df['timestamp'].min()
+        end_time = data_df['timestamp'].max()
         times = []
         current_time = start_time
         end = end_time + pd.Timedelta(minutes=1)
@@ -384,12 +404,15 @@ class AlpacaProcessor:
         df = self.add_technical_indicator(new_df, tech_indicator_list)
         df["VIXY"] = 0
 
-        price_array, tech_array, turbulence_array = self.df_to_array(
+        open_array, high_array, low_array, price_array, tech_array, turbulence_array = self.df_to_array(
             df, tech_indicator_list, if_vix=True
         )
-        latest_price = price_array[-1]
-        latest_tech = tech_array[-1]
+        latest_price = price_array[-2]
+        latest_open = open_array[-2]
+        latest_high = high_array[-2]
+        latest_low = low_array[-2]
+        latest_tech = tech_array[-2]
         turb_df = self.api.get_bars(["VIXY"], time_interval, limit=1).df
         latest_turb = turb_df["close"].values
-        return 0
+        return latest_tech, latest_turb
         

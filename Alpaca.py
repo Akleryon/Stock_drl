@@ -7,14 +7,15 @@ import alpaca_trade_api as tradeapi
 import datetime
 import threading
 
-from finrl.meta.data_processor import Alpaca
+from module.processor_alpaca import AlpacaProcessor
 from module.config_tickers import DOW_30_TICKER
 
 from module.config import (
     ALPACA_API_BASE_URL,
     ALPACA_API_KEY,
     ALPACA_API_SECRET,
-    INDICATORS
+    INDICATORS,
+    TODAY
 )
 
 class Alpaca():
@@ -147,46 +148,51 @@ class Alpaca():
                 tSubmitOrder.join()
             
             self.stocks_cd[:] = 0    
-
-           
+       
     def get_state(self):
-       alpaca = Alpaca(api=self.alpaca)
-       price, tech, turbulence = alpaca.fetch_latest_data(ticker_list = DOW_30_TICKER, time_interval='1Min',
-                                                     tech_indicator_list=INDICATORS)
+        stock_dimension = len(DOW_30_TICKER)
+        state_space = 1 + 2*stock_dimension + len(INDICATORS)*stock_dimension
 
-       turbulence_bool = 1 if turbulence >= self.turbulence_thresh else 0
-        
-       turbulence = (self.sigmoid_sign(turbulence, self.turbulence_thresh) * 2 ** -5).astype(np.float32)
-        
-       tech = tech * 2 ** -7
-       positions = self.alpaca.list_positions()
-       stocks = [0] * len(DOW_30_TICKER)
-       for position in positions:
-          ind = DOW_30_TICKER.index(position.symbol)
-          stocks[ind] = ( abs(int(float(position.qty))))
-        
-       stocks = np.asarray(stocks, dtype = float)
-       cash = float(self.alpaca.get_account().cash)
-       self.cash = cash
-       self.stocks = stocks
-       self.turbulence_bool = turbulence_bool 
-       self.price = price
-        
-        
-        
-       amount = np.array(self.cash * (2 ** -12), dtype=np.float32)
-       scale = np.array(2 ** -6, dtype=np.float32)
-       state = np.hstack((amount,
-                    turbulence,
-                    self.turbulence_bool,
-                    price * scale,
-                    self.stocks * scale,
-                    self.stocks_cd,
-                    tech,
-                    )).astype(np.float32)
-       state[np.isnan(state)] = 0.0
-       state[np.isinf(state)] = 0.0
-       return state
+        buy_cost_list = sell_cost_list = [0.001] * stock_dimension
+        num_stock_shares = [0] * stock_dimension
+
+        env_kwargs = {
+        "hmax": 100,
+        "initial_amount": self.alpaca.get_account().cash,
+        "num_stock_shares": num_stock_shares,
+        "buy_cost_pct": buy_cost_list,
+        "sell_cost_pct": sell_cost_list,
+        "state_space": state_space,
+        "stock_dim": stock_dimension,
+        "tech_indicator_list": INDICATORS,
+        "action_space": stock_dimension,
+        "reward_scaling": 1e-4
+          }
+
+        t = AlpacaProcessor(API_SECRET= ALPACA_API_SECRET, API_BASE_URL= ALPACA_API_BASE_URL, API_KEY=ALPACA_API_KEY)
+        d = pd.DataFrame(columns=['date', 'tic', 'open', 'high', 'low', 'close', 'volume', 'day', 'macd',
+       'boll_ub', 'boll_lb', 'rsi_30', 'cci_30', 'dx_30', 'close_30_sma',
+       'close_60_sma', 'vix', 'turbulence'])
+        d["tic"] = DOW_30_TICKER
+
+        for tic in range(len(DOW_30_TICKER)):
+            tech, turb = t.fetch_latest_data([DOW_30_TICKER[tic]], '1Min', INDICATORS)
+            dic = self.alpa.get_latest_bar(DOW_30_TICKER[tic])
+            dic = eval('{' + str(dic)[10:-2].replace('\n   ', '') + '}')
+            d.iloc[tic,2] =np.float64(dic['o'])
+            d.iloc[tic,3] = np.float64(dic['h'])
+            d.iloc[tic,4] = np.float64(dic['l'])
+            d.iloc[tic,5] = np.float64(dic['c'])
+            d.iloc[tic,6] = np.float64(dic['v'])
+            d.iloc[tic,-2] = np.float64(turb[0])
+            d.iloc[tic,-1] = np.float64(0)
+            d.iloc[tic, 0] = TODAY.strftime('%Y-%M-%d')
+            d.iloc[tic, 7] = np.float64(datetime.datetime.weekday(TODAY))
+            c = 0
+            for i in range(len(INDICATORS)):
+                d.iloc[tic,i+8] = np.float64(tech[c])
+                c+=1
+        return d
     
     @staticmethod
     def sigmoid_sign(ary, thresh):
