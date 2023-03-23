@@ -335,8 +335,8 @@ class AlpacaProcessor:
             data_df = pd.concat([barset, data_df])
 
         data_df = data_df.reset_index()
-        start_time = data_df['timestamp'].min()
-        end_time = data_df['timestamp'].max()
+        start_time = data_df['timestamp'][0]
+        end_time = data_df['timestamp'][len(data_df)-1]
         times = []
         current_time = start_time
         end = end_time + pd.Timedelta(minutes=1)
