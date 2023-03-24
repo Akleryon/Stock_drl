@@ -7,7 +7,6 @@ import pandas as pd
 import pytz
 from stockstats import StockDataFrame as Sdf
 
-
 class AlpacaProcessor:
     def __init__(self, API_KEY=None, API_SECRET=None, API_BASE_URL=None, api=None):
         if api is None:
@@ -325,18 +324,12 @@ class AlpacaProcessor:
         return trading_days
 
     def fetch_latest_data(
-        self, ticker_list, time_interval, tech_indicator_list, limit=100
+        self, ticker_list, time_interval, tech_indicator_list, limit=100, df=None, start_time = None, end_time=None
     ) -> pd.DataFrame:
-        data_df = pd.DataFrame()
-        for tic in ticker_list:
-            barset = self.api.get_bars(tic, time_interval, limit=limit).df  # [tic]
-            barset["tic"] = tic
-            barset = barset.reset_index()
-            data_df = pd.concat([barset, data_df])
-
-        data_df = data_df.reset_index()
-        start_time = data_df['timestamp'][0]
-        end_time = data_df['timestamp'][len(data_df)-1]
+        data_df = df
+        times = []
+        current_time = start_time
+        end = end_time + pd.Timedelta(minutes=1)
         times = []
         current_time = start_time
         end = end_time + pd.Timedelta(minutes=1)

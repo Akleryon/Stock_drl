@@ -17,7 +17,7 @@ TRAIN_START_DATE = '2009-01-01'
 TRAIN_END_DATE = str(YESTERDAY.date() - datetime.timedelta(days=DELTA*0.2))
 
 TEST_START_DATE = str(datetime.datetime.now)
-TEST_END_DATE =str(datetime.datetime.now)
+TEST_END_DATE = str((YESTERDAY).date())
 
 TRADE_START_DATE = str(YESTERDAY.date() - datetime.timedelta(days=DELTA*0.2))
 TRADE_END_DATE = str(YESTERDAY.date())

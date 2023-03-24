@@ -23,7 +23,7 @@ class Alpaca():
     def __init__(self, model, turbulence_thresh=70):
         self.model = model
         self.turbulence_thresh = turbulence_thresh
-
+        self.time_interval = 60
         try:
             self.alpaca = tradeapi.REST(ALPACA_API_KEY,ALPACA_API_SECRET,ALPACA_API_BASE_URL, 'v2')
         except:
@@ -103,7 +103,7 @@ class Alpaca():
         state = self.get_state()
 
         action = self.model.predict(state)[0]
-
+        self.stocks_cd += 1
         if self.turbulence_bool == 0:
             min_action = 10  # stock_cd
             for index in np.where(action < -min_action)[0]:  # sell_index:
@@ -150,7 +150,7 @@ class Alpaca():
             self.stocks_cd[:] = 0    
        
     def get_state(self):
-        stock_dimension = len(DOW_30_TICKER)
+        stock_dimension = len(DOW_30_TICKER-1)
         state_space = 1 + 2*stock_dimension + len(INDICATORS)*stock_dimension
 
         buy_cost_list = sell_cost_list = [0.001] * stock_dimension
@@ -169,15 +169,29 @@ class Alpaca():
         "reward_scaling": 1e-4
           }
 
-        t = AlpacaProcessor(API_SECRET= ALPACA_API_SECRET, API_BASE_URL= ALPACA_API_BASE_URL, API_KEY=ALPACA_API_KEY)
+        processor = AlpacaProcessor(API_SECRET= ALPACA_API_SECRET, API_BASE_URL= ALPACA_API_BASE_URL, API_KEY=ALPACA_API_KEY)
         d = pd.DataFrame(columns=['date', 'tic', 'open', 'high', 'low', 'close', 'volume', 'day', 'macd',
        'boll_ub', 'boll_lb', 'rsi_30', 'cci_30', 'dx_30', 'close_30_sma',
        'close_60_sma', 'vix', 'turbulence'])
         d["tic"] = DOW_30_TICKER
+        d = d.drop(d.index[len(d)-1])
 
-        for tic in range(len(DOW_30_TICKER)):
-            tech, turb = t.fetch_latest_data([DOW_30_TICKER[tic]], '1Min', INDICATORS)
-            dic = self.alpa.get_latest_bar(DOW_30_TICKER[tic])
+        data_df = pd.DataFrame()
+        for tic in DOW_30_TICKER:
+            barset = self.alpaca.get_bars(tic, '1Min').df  # [tic]
+            barset["tic"] = tic
+            barset = barset.reset_index()
+            data_df = pd.concat([barset, data_df])
+        data_df = data_df.reset_index()
+        start_time = data_df['timestamp'][0]
+        end_time = data_df['timestamp'][len(data_df)-1]
+
+        for tic in range(len(DOW_30_TICKER)-1):
+            tech, turb = processor.fetch_latest_data([DOW_30_TICKER[tic]], '1Min', INDICATORS, df = data_df, start_time = start_time, end_time = end_time)
+            turbulence_bool = 1 if turb >= self.turbulence_thresh else 0
+            turb = (self.sigmoid_sign(turb, self.turbulence_thresh) * 2 ** -5).astype(np.float32)
+            
+            dic = self.alpaca.get_latest_bar(DOW_30_TICKER[tic])
             dic = eval('{' + str(dic)[10:-2].replace('\n   ', '') + '}')
             d.iloc[tic,2] =np.float64(dic['o'])
             d.iloc[tic,3] = np.float64(dic['h'])
@@ -186,13 +200,17 @@ class Alpaca():
             d.iloc[tic,6] = np.float64(dic['v'])
             d.iloc[tic,-2] = np.float64(turb[0])
             d.iloc[tic,-1] = np.float64(0)
-            d.iloc[tic, 0] = TODAY.strftime('%Y-%M-%d')
+            d.iloc[tic, 0] = TODAY.strftime('%Y-%m-%d')
             d.iloc[tic, 7] = np.float64(datetime.datetime.weekday(TODAY))
             c = 0
             for i in range(len(INDICATORS)):
                 d.iloc[tic,i+8] = np.float64(tech[c])
                 c+=1
-        return d
+        d.index = d.date.factorize()[0]
+        d = d.fillna(0)
+        gym = StockTradingEnv(df = d, turbulence_threshold = 70,risk_indicator_col='vix', **env_kwargs)
+        env, obs = gym.get_sb_env()
+        return obs
     
     @staticmethod
     def sigmoid_sign(ary, thresh):
