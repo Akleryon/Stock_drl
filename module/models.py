@@ -1,6 +1,6 @@
 # DRL models from Stable Baselines 3
 from __future__ import annotations
-
+import config 
 import time
 import datetime
 import numpy as np
@@ -14,8 +14,6 @@ from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.noise import NormalActionNoise
 from stable_baselines3.common.noise import OrnsteinUhlenbeckActionNoise
 from stable_baselines3.common.vec_env import DummyVecEnv
-
-import config
 from env_stocktrading import StockTradingEnv
 from preprocessor import data_split
 
@@ -108,9 +106,10 @@ class DRLAgent:
         return model
 
     @staticmethod
-    def DRL_prediction(model, environment, deterministic=True):
+    def DRL_prediction(model_name, environment, cwd, deterministic=True):
         test_env, test_obs = environment.get_sb_env()
         """make a prediction"""
+        model = MODELS[model_name].load(cwd)
         account_memory = []
         actions_memory = []
         #         state_memory=[] #add memory pool to store states
@@ -199,14 +198,15 @@ class DRLEnsembleAgent:
 
     @staticmethod
     def train_model(model, model_name, tb_log_name, iter_num, total_timesteps=5000):
-        model = model.learn(
-            total_timesteps=total_timesteps,
-            tb_log_name=tb_log_name,
-            callback=TensorboardCallback(),
-        )
-        model.save(
-            f"{config.TRAINED_MODEL_DIR}/{model_name.upper()}_{total_timesteps // 1000}k_{iter_num}"
-        )
+        for i in range(1,30):
+            model = model.learn(
+                total_timesteps=total_timesteps,
+                tb_log_name=tb_log_name,
+                callback=TensorboardCallback(),
+            )
+            model.save(
+                f"{config.TRAINED_MODEL_DIR}/{model_name.upper()}_{total_timesteps*i // 1000}k_{iter_num}"
+            )
         return model
 
     @staticmethod

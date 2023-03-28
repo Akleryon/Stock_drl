@@ -1,4 +1,4 @@
-from module.models import DRLAgent
+#from module.models import DRLAgent
 from module.env_stocktrading import StockTradingEnv
 import time
 import pandas as pd
@@ -6,7 +6,7 @@ import numpy as np
 import alpaca_trade_api as tradeapi
 import datetime
 import threading
-
+import random
 from module.processor_alpaca import AlpacaProcessor
 from module.config_tickers import DOW_30_TICKER
 
@@ -17,6 +17,9 @@ from module.config import (
     INDICATORS,
     TODAY
 )
+
+from stable_baselines3 import SAC
+from stable_baselines3 import DDPG
 
 class Alpaca():
 
@@ -29,15 +32,17 @@ class Alpaca():
         except:
             raise ValueError('Fail to connect Alpaca. Please check account info and internet connection.')
         
-        self.stocks = np.asarray([0] * len(DOW_30_TICKER)) #stocks holding
+        self.stocks = np.asarray([0] * len(DOW_30_TICKER[:-1])) #stocks holding
         self.stocks_cd = np.zeros_like(self.stocks) 
         self.cash = None #cash record 
-        self.stocks_df = pd.DataFrame(self.stocks, columns=['stocks'], index = DOW_30_TICKER)
+        self.stocks_df = pd.DataFrame(self.stocks, columns=['stocks'], index = DOW_30_TICKER[:-1])
         self.asset_list = []
-        self.price = np.asarray([0] * len(DOW_30_TICKER))
-        self.stockUniverse = DOW_30_TICKER
+        self.price = np.asarray([0] * len(DOW_30_TICKER[:-1]))
+        self.stockUniverse = DOW_30_TICKER[:-1]
         self.turbulence_bool = 0
         self.equities = []
+        self.max_stocks = int(0.0001*(float(self.alpaca.get_account().cash)))
+
 
     def run(self):
         orders = self.alpaca.list_orders(status="open")
@@ -100,14 +105,26 @@ class Alpaca():
           resp.append(True)
     
     def trade(self):
+        print('trade')
         state = self.get_state()
 
         action = self.model.predict(state)[0]
+        action = (action * self.max_stocks).astype(int)
+        
         self.stocks_cd += 1
         if self.turbulence_bool == 0:
             min_action = 10  # stock_cd
-            for index in np.where(action < -min_action)[0]:  # sell_index:
-                sell_num_shares = min(self.stocks[index], -action[index])
+            sell = []
+            buy = []
+
+            for j in range(len(action[0])):
+                if action[0][j] < -min_action:
+                    sell.append(j)
+                elif action[0][j] > min_action:
+                    buy.append(j)
+
+            for index in sell:  # sell_index:
+                sell_num_shares = -action[0][index]
                 qty =  abs(int(sell_num_shares))
                 respSO = []
                 tSubmitOrder = threading.Thread(target=self.submitOrder(qty, self.stockUniverse[index], 'sell', respSO))
@@ -115,13 +132,14 @@ class Alpaca():
                 tSubmitOrder.join()
                 self.cash = float(self.alpaca.get_account().cash)
                 self.stocks_cd[index] = 0
+                
 
-            for index in np.where(action > min_action)[0]:  # buy_index:
+            for index in buy:  # buy_index:
                 if self.cash < 0:
                     tmp_cash = 0
                 else:
                     tmp_cash = self.cash
-                buy_num_shares = min(tmp_cash // self.price[index], abs(int(action[index])))
+                buy_num_shares = min(tmp_cash // self.price[index], abs(int(action[0][index])))
                 if (buy_num_shares != buy_num_shares): # if buy_num_change = nan
                     qty = 0 # set to 0 quantity
                 else:
@@ -133,6 +151,7 @@ class Alpaca():
                 tSubmitOrder.join()
                 self.cash = float(self.alpaca.get_account().cash)
                 self.stocks_cd[index] = 0
+                
                 
         else:  # sell all when turbulence
             positions = self.alpaca.list_positions()
@@ -148,17 +167,18 @@ class Alpaca():
                 tSubmitOrder.join()
             
             self.stocks_cd[:] = 0    
+            
        
     def get_state(self):
-        stock_dimension = len(DOW_30_TICKER-1)
+        stock_dimension = len(DOW_30_TICKER[:-1])
         state_space = 1 + 2*stock_dimension + len(INDICATORS)*stock_dimension
 
         buy_cost_list = sell_cost_list = [0.001] * stock_dimension
         num_stock_shares = [0] * stock_dimension
 
         env_kwargs = {
-        "hmax": 100,
-        "initial_amount": self.alpaca.get_account().cash,
+        "hmax": int(0.0001*(float(self.alpaca.get_account().cash))),
+        "initial_amount": float(self.alpaca.get_account().cash),
         "num_stock_shares": num_stock_shares,
         "buy_cost_pct": buy_cost_list,
         "sell_cost_pct": sell_cost_list,
@@ -177,7 +197,7 @@ class Alpaca():
         d = d.drop(d.index[len(d)-1])
 
         data_df = pd.DataFrame()
-        for tic in DOW_30_TICKER:
+        for tic in DOW_30_TICKER[:-1]:
             barset = self.alpaca.get_bars(tic, '1Min').df  # [tic]
             barset["tic"] = tic
             barset = barset.reset_index()
@@ -208,7 +228,7 @@ class Alpaca():
                 c+=1
         d.index = d.date.factorize()[0]
         d = d.fillna(0)
-        gym = StockTradingEnv(df = d, turbulence_threshold = 70,risk_indicator_col='vix', **env_kwargs)
+        gym = StockTradingEnv(df = d, turbulence_threshold = self.turbulence_thresh,risk_indicator_col='vix', **env_kwargs)
         env, obs = gym.get_sb_env()
         return obs
     
@@ -218,3 +238,7 @@ class Alpaca():
             return 1 / (1 + np.exp(-x * np.e)) - 0.5
 
         return sigmoid(ary / thresh) * thresh
+
+model = SAC.load('trained_models/sac.zip')
+test = Alpaca(model=model)
+test.run()
