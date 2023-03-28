@@ -32,12 +32,27 @@ class Alpaca():
         except:
             raise ValueError('Fail to connect Alpaca. Please check account info and internet connection.')
         
-        self.stocks = np.asarray([0] * len(DOW_30_TICKER[:-1])) #stocks holding
+        l = []
+        for i in DOW_30_TICKER[:-1]:
+            try:
+                l.append(int(self.alpaca.get_position(i).qty))
+            except:
+                l.append(0)
+                pass
+        self.stocks = l #stocks holding
+        l = []
         self.stocks_cd = np.zeros_like(self.stocks) 
         self.cash = None #cash record 
         self.stocks_df = pd.DataFrame(self.stocks, columns=['stocks'], index = DOW_30_TICKER[:-1])
         self.asset_list = []
-        self.price = np.asarray([0] * len(DOW_30_TICKER[:-1]))
+        for i in DOW_30_TICKER[:-1]:
+            try:
+                l.append(float(self.alpaca.get_position(i).current_price))
+            except:
+                l.append(0)
+                pass
+        self.price = l
+        l = []
         self.stockUniverse = DOW_30_TICKER[:-1]
         self.turbulence_bool = 0
         self.equities = []
@@ -124,7 +139,7 @@ class Alpaca():
                     buy.append(j)
 
             for index in sell:  # sell_index:
-                sell_num_shares = -action[0][index]
+                sell_num_shares = min(action[0][index], self.stocks[index])
                 qty =  abs(int(sell_num_shares))
                 respSO = []
                 tSubmitOrder = threading.Thread(target=self.submitOrder(qty, self.stockUniverse[index], 'sell', respSO))
@@ -132,7 +147,7 @@ class Alpaca():
                 tSubmitOrder.join()
                 self.cash = float(self.alpaca.get_account().cash)
                 self.stocks_cd[index] = 0
-                
+                self.stocks[index] = self.stocks[index] + qty
 
             for index in buy:  # buy_index:
                 if self.cash < 0:
@@ -151,6 +166,7 @@ class Alpaca():
                 tSubmitOrder.join()
                 self.cash = float(self.alpaca.get_account().cash)
                 self.stocks_cd[index] = 0
+                self.stocks[index] = self.stocks[index] + qty
                 
                 
         else:  # sell all when turbulence
