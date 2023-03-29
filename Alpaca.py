@@ -135,7 +135,10 @@ class Alpaca():
                     buy.append(j)
 
             for index in sell:  # sell_index:
-                sell_num_shares = (-action[0][index])*self.stocks[index]/100
+                if self.stocks[index] == 0:
+                    sell_num_shares = -action[0][index]
+                else:
+                    sell_num_shares = min(-action[0][index], abs(self.stocks[index]))
                 qty =  abs(int(sell_num_shares))
                 respSO = []
                 tSubmitOrder = threading.Thread(target=self.submitOrder(qty, self.stockUniverse[index], 'sell', respSO))
