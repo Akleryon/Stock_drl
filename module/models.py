@@ -98,11 +98,15 @@ class DRLAgent:
         )
 
     def train_model(self, model, tb_log_name, total_timesteps=5000):
-        model = model.learn(
-            total_timesteps=total_timesteps,
-            tb_log_name=tb_log_name,
-            callback=TensorboardCallback(),
-        )
+        for i in range(1,30):
+            model = model.learn(
+                total_timesteps=total_timesteps,
+                tb_log_name=tb_log_name,
+                callback=TensorboardCallback(),
+            )
+            model.save(
+                f"{config.TRAINED_MODEL_DIR}/{tb_log_name.upper()}_{total_timesteps*i // 1000}k_"
+            )
         return model
 
     @staticmethod

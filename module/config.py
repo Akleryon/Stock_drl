@@ -1,6 +1,7 @@
 # directory
 from __future__ import annotations
 import datetime 
+from config_tickers import DOW_30_TICKER
 
 TODAY = datetime.datetime.today()
 YESTERDAY = datetime.datetime.today() - datetime.timedelta(days=1)
@@ -35,19 +36,54 @@ INDICATORS = [
     "close_60_sma",
 ]
 
+# Environment
+stock_dimension = len(DOW_30_TICKER)
+state_space = 1 + 2*stock_dimension + len(INDICATORS)*stock_dimension
+sell_cost_list = [0.001] * stock_dimension
+num_stock_shares = [0] * stock_dimension
+buy_cost_list = sell_cost_list
+
+env_kwargs = {
+      "hmax": 100,
+      "initial_amount": 1000000,
+      "num_stock_shares": num_stock_shares,
+      "buy_cost_pct": buy_cost_list,
+      "sell_cost_pct": sell_cost_list,
+      "state_space": state_space,
+      "stock_dim": stock_dimension,
+      "tech_indicator_list": INDICATORS,
+      "action_space": stock_dimension,
+      "reward_scaling": 1e-4
+  }
 
 # Model Parameters
-A2C_PARAMS = {"n_steps": 5, "ent_coef": 0.01, "learning_rate": 0.0007}
+A2C_PARAMS = {
+    "n_steps": 2048, 
+    "ent_coef": 0.01, 
+    "learning_rate": 0.0001
+}
+
 PPO_PARAMS = {
     "n_steps": 2048,
     "ent_coef": 0.01,
-    "learning_rate": 0.00025,
-    "batch_size": 64,
+    "learning_rate": 0.0001,
+    "batch_size": 128,
 }
-DDPG_PARAMS = {"batch_size": 128, "buffer_size": 50000, "learning_rate": 0.001}
-TD3_PARAMS = {"batch_size": 100, "buffer_size": 1000000, "learning_rate": 0.001}
+
+DDPG_PARAMS = {
+    "batch_size": 128, 
+    "buffer_size": 50000, 
+    "learning_rate": 0.0001
+    }
+
+TD3_PARAMS = {
+    "batch_size": 128, 
+    "buffer_size": 1000000, 
+    "learning_rate": 0.0001
+}
+
 SAC_PARAMS = {
-    "batch_size": 64,
+    "batch_size": 128,
     "buffer_size": 100000,
     "learning_rate": 0.0001,
     "learning_starts": 100,
@@ -76,7 +112,7 @@ TIME_ZONE_SELFDEFINED = "xxx"  # If neither of the above is your time zone, you 
 USE_TIME_ZONE_SELFDEFINED = 0  # 0 (default) or 1 (use the self defined)
 
 # parameters for data sources
-ALPACA_API_SECRET = "eJtCP6TshiJgrldXFtRuttGfvDSr9OWdkXlJJ7mJ"  # your ALPACA_API_SECRET
-ALPACA_API_KEY = "PK4WKJUQ2QSCQXYN3TNG" # your ALPACA_API_KEY
+ALPACA_API_SECRET = "0NeNa0RxD8Rogwpa2HAWFtzEVguNCAwLRH8gUpPB"  # your ALPACA_API_SECRET
+ALPACA_API_KEY = "PKUV1NPSL4NFL18GY2W0" # your ALPACA_API_KEY
 ALPACA_API_BASE_URL = "https://paper-api.alpaca.markets"  # alpaca url
 BINANCE_BASE_URL = "https://data.binance.vision/"  # binance url

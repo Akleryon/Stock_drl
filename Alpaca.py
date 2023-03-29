@@ -6,7 +6,6 @@ import numpy as np
 import alpaca_trade_api as tradeapi
 import datetime
 import threading
-import random
 from module.processor_alpaca import AlpacaProcessor
 from module.config_tickers import DOW_30_TICKER
 
@@ -17,9 +16,6 @@ from module.config import (
     INDICATORS,
     TODAY
 )
-
-from stable_baselines3 import SAC
-from stable_baselines3 import DDPG
 
 class Alpaca():
 
@@ -42,12 +38,12 @@ class Alpaca():
         self.stocks = l #stocks holding
         l = []
         self.stocks_cd = np.zeros_like(self.stocks) 
-        self.cash = None #cash record 
+        self.cash = float(self.alpaca.get_account().cash) #cash record 
         self.stocks_df = pd.DataFrame(self.stocks, columns=['stocks'], index = DOW_30_TICKER[:-1])
         self.asset_list = []
         for i in DOW_30_TICKER[:-1]:
             try:
-                l.append(float(self.alpaca.get_position(i).current_price))
+                l.append(float(self.alpaca.get_latest_bar(i).c))
             except:
                 l.append(0)
                 pass
@@ -139,7 +135,7 @@ class Alpaca():
                     buy.append(j)
 
             for index in sell:  # sell_index:
-                sell_num_shares = min(action[0][index], self.stocks[index])
+                sell_num_shares = (-action[0][index])*self.stocks[index]/100
                 qty =  abs(int(sell_num_shares))
                 respSO = []
                 tSubmitOrder = threading.Thread(target=self.submitOrder(qty, self.stockUniverse[index], 'sell', respSO))
@@ -147,14 +143,19 @@ class Alpaca():
                 tSubmitOrder.join()
                 self.cash = float(self.alpaca.get_account().cash)
                 self.stocks_cd[index] = 0
-                self.stocks[index] = self.stocks[index] + qty
+                try:    
+                    self.stocks[index] = int(self.alpaca.get_position(self.stockUniverse[index]).qty)
+                except:
+                    self.stocks[index] = 0
+                    pass
 
             for index in buy:  # buy_index:
-                if self.cash < 0:
-                    tmp_cash = 0
+                if self.cash < 25000:
+                    print("Dodge PDT")
+                    break
                 else:
                     tmp_cash = self.cash
-                buy_num_shares = min(tmp_cash // self.price[index], abs(int(action[0][index])))
+                buy_num_shares = min(abs(tmp_cash // self.price[index]), abs(int(action[0][index])))
                 if (buy_num_shares != buy_num_shares): # if buy_num_change = nan
                     qty = 0 # set to 0 quantity
                 else:
@@ -166,7 +167,11 @@ class Alpaca():
                 tSubmitOrder.join()
                 self.cash = float(self.alpaca.get_account().cash)
                 self.stocks_cd[index] = 0
-                self.stocks[index] = self.stocks[index] + qty
+                try:    
+                    self.stocks[index] = int(self.alpaca.get_position(self.stockUniverse[index]).qty)
+                except:
+                    self.stocks[index] = 0
+                    pass
                 
                 
         else:  # sell all when turbulence
@@ -182,7 +187,8 @@ class Alpaca():
                 tSubmitOrder.start()
                 tSubmitOrder.join()
             
-            self.stocks_cd[:] = 0    
+            self.stocks_cd[:] = 0   
+            self.stocks = np.zeros(len(self.stockUniverse)) 
             
        
     def get_state(self):
@@ -224,7 +230,7 @@ class Alpaca():
 
         for tic in range(len(DOW_30_TICKER)-1):
             tech, turb = processor.fetch_latest_data([DOW_30_TICKER[tic]], '1Min', INDICATORS, df = data_df, start_time = start_time, end_time = end_time)
-            turbulence_bool = 1 if turb >= self.turbulence_thresh else 0
+            self.turbulence_bool = 1 if turb >= self.turbulence_thresh else 0
             turb = (self.sigmoid_sign(turb, self.turbulence_thresh) * 2 ** -5).astype(np.float32)
             
             dic = self.alpaca.get_latest_bar(DOW_30_TICKER[tic])
@@ -255,6 +261,5 @@ class Alpaca():
 
         return sigmoid(ary / thresh) * thresh
 
-model = SAC.load('trained_models/sac.zip')
-test = Alpaca(model=model)
-test.run()
+
+

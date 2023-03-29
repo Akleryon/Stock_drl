@@ -50,12 +50,6 @@ def get_processed_data(ticker, indicators):
     train = data_split(processed_full, TRAIN_START_DATE,TRAIN_END_DATE)
     trade = data_split(processed_full, TRADE_START_DATE,TRADE_END_DATE)
 
-    stock_dimension = len(train.tic.unique())
-    state_space = 1 + 2*stock_dimension + len(indicators)*stock_dimension
-    print(f"Stock Dimension: {stock_dimension}, State Space: {state_space}")
-    sell_cost_list = [0.001] * stock_dimension
-    num_stock_shares = [0] * stock_dimension
-
     print("========== PROCESSING OVER ==========")
     
-    return mvo_df, train, trade, stock_dimension, state_space, sell_cost_list, num_stock_shares, processed_full
+    return mvo_df, train, trade, processed_full
