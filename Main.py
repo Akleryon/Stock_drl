@@ -6,7 +6,6 @@ from stable_baselines3 import (
     DDPG,
     A2C
 )
-
 from module.config import (
     PPO_PARAMS,
     A2C_PARAMS,
