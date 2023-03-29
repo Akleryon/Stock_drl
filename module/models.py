@@ -1,6 +1,6 @@
 # DRL models from Stable Baselines 3
 from __future__ import annotations
-import config 
+import module.config as config
 import time
 import datetime
 import numpy as np
@@ -14,8 +14,8 @@ from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.noise import NormalActionNoise
 from stable_baselines3.common.noise import OrnsteinUhlenbeckActionNoise
 from stable_baselines3.common.vec_env import DummyVecEnv
-from env_stocktrading import StockTradingEnv
-from preprocessor import data_split
+from module.env_stocktrading import StockTradingEnv
+from module.preprocessor import data_split
 
 MODELS = {"a2c": A2C, "ddpg": DDPG, "td3": TD3, "sac": SAC, "ppo": PPO}
 

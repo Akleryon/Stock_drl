@@ -14,7 +14,7 @@ from module.config import (
     SAC_PARAMS
 )
 
-model = 'choose'    #SAC.load(path = 'trained_models/sac.zip', kwargs= SAC_PARAMS)
+model = SAC.load(path = 'trained_models/sac.zip', kwargs= SAC_PARAMS)
 
 test = Alpaca(model=model)
 test.run()

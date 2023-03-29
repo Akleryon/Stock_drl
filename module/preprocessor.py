@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from stockstats import StockDataFrame as Sdf
 
-from module import config
+import module.config as config
 from module.yahoodownloader import YahooDownloader
 from module.config import (
     TRAIN_START_DATE,

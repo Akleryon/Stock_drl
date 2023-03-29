@@ -8,7 +8,6 @@ import datetime
 import threading
 from module.processor_alpaca import AlpacaProcessor
 from module.config_tickers import DOW_30_TICKER
-
 from module.config import (
     ALPACA_API_BASE_URL,
     ALPACA_API_KEY,
@@ -116,7 +115,6 @@ class Alpaca():
           resp.append(True)
     
     def trade(self):
-        print('trade')
         state = self.get_state()
 
         action = self.model.predict(state)[0]
@@ -124,7 +122,7 @@ class Alpaca():
         
         self.stocks_cd += 1
         if self.turbulence_bool == 0:
-            min_action = 10  # stock_cd
+            min_action = 70  # stock_cd
             sell = []
             buy = []
 
