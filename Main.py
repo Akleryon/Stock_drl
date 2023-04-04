@@ -14,8 +14,7 @@ from module.config import (
     SAC_PARAMS
 )
 
-model = "model"  #SAC.load(path = 'trained_models/sac.zip', kwargs= SAC_PARAMS)
-
+model = PPO.load('trained_models/PPO/PPO_660k.zip', kwargs=PPO_PARAMS)
 test = Alpaca(model=model)
 test.run()
 

@@ -21,7 +21,7 @@ class Alpaca():
     def __init__(self, model, turbulence_thresh=70):
         self.model = model
         self.turbulence_thresh = turbulence_thresh
-        self.time_interval = 60
+        self.time_interval = 86400
         try:
             self.alpaca = tradeapi.REST(ALPACA_API_KEY,ALPACA_API_SECRET,ALPACA_API_BASE_URL, 'v2')
         except:
