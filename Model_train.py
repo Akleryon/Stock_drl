@@ -35,10 +35,10 @@ print("========== CREATING DIRECTORIES ==========")
 check_and_make_directories(
     [DATA_SAVE_DIR, TRAINED_MODEL_DIR, TENSORBOARD_LOG_DIR, RESULTS_DIR])
 
-if_using_a2c = True
-if_using_ddpg = True
-if_using_ppo = True
-if_using_td3 = True
+if_using_a2c = False
+if_using_ddpg = False
+if_using_ppo = False
+if_using_td3 = False
 if_using_sac = True
 
 mvo_df, train, trade, df = get_processed_data(
@@ -48,6 +48,9 @@ e_train_gym = StockTradingEnv(df=train, **env_kwargs)
 env_train, _ = e_train_gym.get_sb_env()
 
 print(type(env_train))
+
+
+print("========== CREATING AGENTS ==========")
 
 agent = DRLAgent(env=env_train)
 
@@ -66,12 +69,20 @@ if if_using_a2c:
         # Set new logger
         model_a2c.set_logger(new_logger_a2c)
 
+agent.train_model(model=model_a2c,
+                      tb_log_name='a2c',
+                      total_timesteps=30000) if if_using_a2c else None
+
 if if_using_ddpg:
         # set up logger
         tmp_path = RESULTS_DIR + '/ddpg'
         new_logger_ddpg = configure(tmp_path, ["stdout", "csv", "tensorboard"])
         # Set new logger
         model_ddpg.set_logger(new_logger_ddpg)
+
+agent.train_model(model=model_ddpg,
+                      tb_log_name='ddpg',
+                      total_timesteps=30000) if if_using_ddpg else None
 
 if if_using_ppo:
         # set up logger
@@ -80,10 +91,20 @@ if if_using_ppo:
         # Set new logger
         model_ppo.set_logger(new_logger_ppo)
 
+agent.train_model(model=model_ppo,
+                      tb_log_name='ppo',
+                      total_timesteps=30000) if if_using_ppo else None
+
 if if_using_td3:
         # set up logger
         tmp_path = RESULTS_DIR + '/td3'
-        model_td3 = agent.get_model("sac", model_kwargs=SAC_PARAMS)
+        new_logger_td3 = configure(tmp_path, ["stdout", "csv", "tensorboard"])
+        # Set new logger
+        model_td3.set_logger(new_logger_td3)
+
+agent.train_model(model=model_td3,
+                      tb_log_name='td3',
+                      total_timesteps=30000) if if_using_td3 else None
 
 if if_using_sac:
         # set up logger
@@ -91,22 +112,6 @@ if if_using_sac:
         new_logger_sac = configure(tmp_path, ["stdout", "csv", "tensorboard"])
         # Set new logger
         model_sac.set_logger(new_logger_sac)
-
-agent.train_model(model=model_a2c,
-                      tb_log_name='a2c',
-                      total_timesteps=30000) if if_using_a2c else None
-
-agent.train_model(model=model_ddpg,
-                      tb_log_name='ddpg',
-                      total_timesteps=30000) if if_using_ddpg else None
-
-agent.train_model(model=model_ppo,
-                      tb_log_name='ppo',
-                      total_timesteps=30000) if if_using_ppo else None
-
-agent.train_model(model=model_td3,
-                      tb_log_name='td3',
-                      total_timesteps=30000) if if_using_td3 else None
 
 agent.train_model(model=model_sac,
                       tb_log_name='sac',

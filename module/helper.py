@@ -5,7 +5,8 @@ from copy import deepcopy
 import pyfolio
 import pandas as pd
 from module.yahoodownloader import YahooDownloader
-
+import warnings
+warnings.filterwarnings('ignore')
 #function obtains maximal return portfolio using linear programming
 
 def MaximizeReturns(MeanReturns, PortfolioSize):
@@ -109,9 +110,9 @@ def backtest_plot(
     df["date"] = pd.to_datetime(df["date"])
     test_returns = get_daily_return(df, value_col_name=value_col_name)
 
-    baseline_df = YahooDownloader(
-        start_date=baseline_start, end_date=baseline_end, ticker_list=baseline_ticker
-    ).fetch_data()
+    baseline_df = get_baseline(
+        start=baseline_start, end=baseline_end, ticker=baseline_ticker
+    )
 
     baseline_df["date"] = pd.to_datetime(baseline_df["date"], format="%Y-%m-%d")
     baseline_df = pd.merge(df[["date"]], baseline_df, how="left", on="date")

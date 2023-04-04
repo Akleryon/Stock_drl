@@ -37,7 +37,7 @@ INDICATORS = [
 ]
 
 # Environment
-stock_dimension = len(DOW_30_TICKER)
+stock_dimension = len(DOW_30_TICKER[:-1])
 state_space = 1 + 2*stock_dimension + len(INDICATORS)*stock_dimension
 sell_cost_list = [0.001] * stock_dimension
 num_stock_shares = [0] * stock_dimension
@@ -58,8 +58,8 @@ env_kwargs = {
 
 # Model Parameters
 A2C_PARAMS = {
-    "n_steps": 2048, 
-    "ent_coef": 0.01, 
+    "n_steps": 5, 
+    "ent_coef": 0.001, 
     "learning_rate": 0.0001
 }
 
@@ -72,19 +72,19 @@ PPO_PARAMS = {
 
 DDPG_PARAMS = {
     "batch_size": 128, 
-    "buffer_size": 50000, 
+    "buffer_size": 1_000_000, 
     "learning_rate": 0.0001
     }
 
 TD3_PARAMS = {
     "batch_size": 128, 
-    "buffer_size": 1000000, 
+    "buffer_size": 1_000_000, 
     "learning_rate": 0.0001
 }
 
 SAC_PARAMS = {
     "batch_size": 128,
-    "buffer_size": 100000,
+    "buffer_size": 1_000_000,
     "learning_rate": 0.0001,
     "learning_starts": 100,
     "ent_coef": "auto_0.1",

@@ -26,6 +26,8 @@ NOISE = {
     "ornstein_uhlenbeck": OrnsteinUhlenbeckActionNoise,
 }
 
+rewards = []
+
 
 class TensorboardCallback(BaseCallback):
     """
@@ -38,10 +40,13 @@ class TensorboardCallback(BaseCallback):
     def _on_step(self) -> bool:
         try:
             self.logger.record(key="train/reward", value=self.locals["rewards"][0])
+            rewards.append(self.locals["rewards"][0])
         except BaseException:
             self.logger.record(key="train/reward", value=self.locals["reward"][0])
+            rewards.append(self.locals["reward"][0])
+        if len(rewards) % 100 == 0:
+            self.logger.record(key="train/mean_reward", value = np.mean(rewards))
         return True
-
 
 class DRLAgent:
     """Provides implementations for DRL algorithms
@@ -97,23 +102,23 @@ class DRLAgent:
             **model_kwargs,
         )
 
-    def train_model(self, model, tb_log_name, total_timesteps=5000):
-        for i in range(1,30):
+    def train_model(self, model, tb_log_name, total_timesteps):
+        for i in range(30):
             model = model.learn(
                 total_timesteps=total_timesteps,
                 tb_log_name=tb_log_name,
                 callback=TensorboardCallback(),
+                reset_num_timesteps=False
             )
             model.save(
-                f"{config.TRAINED_MODEL_DIR}/{tb_log_name.upper()}_{total_timesteps*i // 1000}k_"
+                f"{config.TRAINED_MODEL_DIR}/{tb_log_name.upper()}/{tb_log_name.upper()}_{total_timesteps*i // 1000}k"
             )
         return model
 
     @staticmethod
-    def DRL_prediction(model_name, environment, cwd, deterministic=True):
+    def DRL_prediction(model, environment, deterministic=True):
         test_env, test_obs = environment.get_sb_env()
         """make a prediction"""
-        model = MODELS[model_name].load(cwd)
         account_memory = []
         actions_memory = []
         #         state_memory=[] #add memory pool to store states
@@ -201,7 +206,7 @@ class DRLEnsembleAgent:
         )
 
     @staticmethod
-    def train_model(model, model_name, tb_log_name, iter_num, total_timesteps=5000):
+    def train_model(model, model_name, tb_log_name, iter_num, total_timesteps):
         for i in range(1,30):
             model = model.learn(
                 total_timesteps=total_timesteps,
@@ -209,7 +214,7 @@ class DRLEnsembleAgent:
                 callback=TensorboardCallback(),
             )
             model.save(
-                f"{config.TRAINED_MODEL_DIR}/{model_name.upper()}_{total_timesteps*i // 1000}k_{iter_num}"
+                f"{config.TRAINED_MODEL_DIR}/{model_name.upper()}/{tb_log_name.upper()}_{total_timesteps*i // 1000}k_{iter_num}"
             )
         return model
 
