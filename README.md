@@ -6,7 +6,7 @@ This project was born thanks to the AI4Finance Fundation repository (https://git
 
 ### Task :
 
-We train different DRL agents for stock trading. This task is modeled as a Markov Decision Process (MDP), and the objective function is maximizing (expected) cumulative return.
+I train different DRL agents for stock trading. This task is modeled as a Markov Decision Process (MDP), and the objective function is maximizing (expected) cumulative return.
 
 We specify the state-action-reward as follows:
 
