@@ -122,7 +122,7 @@ class Alpaca():
         
         self.stocks_cd += 1
         if self.turbulence_bool == 0:
-            min_action = 60  # stock_cd
+            min_action = 50  # stock_cd
             sell = []
             buy = []
 
