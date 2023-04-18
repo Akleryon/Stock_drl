@@ -133,7 +133,7 @@ class Alpaca():
                     buy.append(j)
 
             for index in sell:  # sell_index:
-                sell_num_shares = action[0][index]
+                sell_num_shares = abs(self.max_stocks//action[0][index])*100
                 if self.stocks[index] > 0:    
                     qty =  abs(int(sell_num_shares*0.01*self.stocks[index]))
                 else: 
@@ -156,7 +156,7 @@ class Alpaca():
                     break
                 else:
                     tmp_cash = self.cash
-                buy_num_shares = min(abs(tmp_cash // self.price[index]), abs(int(action[0][index])))
+                buy_num_shares = min(abs(tmp_cash // self.price[index]), abs((self.max_stocks // action[0][index]))*100)
                 if (buy_num_shares != buy_num_shares): # if buy_num_change = nan
                     qty = 0 # set to 0 quantity
                 elif self.stocks[index] < 0:
