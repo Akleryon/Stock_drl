@@ -122,7 +122,7 @@ class Alpaca():
         
         self.stocks_cd += 1
         if self.turbulence_bool == 0:
-            min_action = 50  # stock_cd
+            min_action = int(self.max_stocks*0.7)  # stock_cd
             sell = []
             buy = []
 
@@ -133,11 +133,11 @@ class Alpaca():
                     buy.append(j)
 
             for index in sell:  # sell_index:
-                if self.stocks[index] == 0:
-                    sell_num_shares = -action[0][index]
-                else:
-                    sell_num_shares = min(-action[0][index], abs(self.stocks[index]))
-                qty =  abs(int(sell_num_shares))*-action[0][index]*(1-self.price[index])
+                sell_num_shares = action[0][index]
+                if self.stocks[index] > 0:    
+                    qty =  abs(int(sell_num_shares*0.01*self.stocks[index]))
+                else: 
+                    qty = abs(int(sell_num_shares))
                 respSO = []
                 tSubmitOrder = threading.Thread(target=self.submitOrder(qty, self.stockUniverse[index], 'sell', respSO))
                 tSubmitOrder.start()
@@ -159,9 +159,10 @@ class Alpaca():
                 buy_num_shares = min(abs(tmp_cash // self.price[index]), abs(int(action[0][index])))
                 if (buy_num_shares != buy_num_shares): # if buy_num_change = nan
                     qty = 0 # set to 0 quantity
+                elif self.stocks[index] < 0:
+                    qty = abs(int(buy_num_shares*0.01*self.stocks[index]))
                 else:
-                    qty = abs(int(buy_num_shares))*action[0][index]*(1-self.price[index])
-                qty = abs(int(buy_num_shares))*action[0][index]*(1-self.price[index])
+                    qty = abs(int(buy_num_shares))
                 respSO = []
                 tSubmitOrder = threading.Thread(target=self.submitOrder(qty, self.stockUniverse[index], 'buy', respSO))
                 tSubmitOrder.start()
