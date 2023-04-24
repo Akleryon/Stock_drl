@@ -61,9 +61,9 @@ class Alpaca():
     
         # Wait for market to open.
         print("Waiting for market to open...")
-        #tAMO = threading.Thread(target=self.awaitMarketOpen)
-        #tAMO.start()
-        #tAMO.join()
+        tAMO = threading.Thread(target=self.awaitMarketOpen)
+        tAMO.start()
+        tAMO.join()
         print("Market opened.")
          # Figure out when the market will close so we can prepare to sell beforehand.
         clock = self.alpaca.get_clock()
