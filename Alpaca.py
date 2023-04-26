@@ -1,5 +1,6 @@
 #from module.models import DRLAgent
 from module.env_stocktrading import StockTradingEnv
+import sys
 import time
 import pandas as pd
 import numpy as np
@@ -79,7 +80,7 @@ class Alpaca():
             break
 
           else:
-            ("Time to trade !")
+            print("Time to trade !")
             trade = threading.Thread(target=self.trade)
             trade.start()
             trade.join()
@@ -122,9 +123,16 @@ class Alpaca():
         action = self.model.predict(state)[0]
         action = (action * self.max_stocks).astype(int)
         print("Actions :")
-        for i in range(len(action)):
-            print(self.stockUniverse[i], " : ", action[i])
+        for i in range(len(action[0])):
+            print(self.stockUniverse[i], " : ", action[0][i])
         time.sleep(10)
+        while True:
+            resp = input("Proceed ? (y/n)")
+            if resp == "y":
+                break
+            else:
+                sys.exit()
+                
         self.stocks_cd += 1
         if self.turbulence_bool == 0:
             min_action = int(self.max_stocks*0.7)  # stock_cd
