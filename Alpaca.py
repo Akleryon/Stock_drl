@@ -21,7 +21,7 @@ class Alpaca():
     def __init__(self, model, turbulence_thresh=70):
         self.model = model
         self.turbulence_thresh = turbulence_thresh
-        self.time_interval = 86400
+        self.time_interval = 21600
         try:
             self.alpaca = tradeapi.REST(ALPACA_API_KEY,ALPACA_API_SECRET,ALPACA_API_BASE_URL, 'v2')
         except:
@@ -79,12 +79,14 @@ class Alpaca():
             break
 
           else:
+            ("Time to trade !")
             trade = threading.Thread(target=self.trade)
             trade.start()
             trade.join()
             last_equity = float(self.alpaca.get_account().last_equity)
             cur_time = time.time()
             self.equities.append([cur_time,last_equity])
+            print("Be back in 6 hours")
             time.sleep(self.time_interval)
 
     
@@ -119,7 +121,10 @@ class Alpaca():
 
         action = self.model.predict(state)[0]
         action = (action * self.max_stocks).astype(int)
-        
+        print("Actions :")
+        for i in range(len(action)):
+            print(self.stockUniverse[i], " : ", action[i])
+        time.sleep(10)
         self.stocks_cd += 1
         if self.turbulence_bool == 0:
             min_action = int(self.max_stocks*0.7)  # stock_cd
