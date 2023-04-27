@@ -121,17 +121,18 @@ class Alpaca():
         state = self.get_state()
 
         action = self.model.predict(state)[0]
-        action = (action * self.max_stocks).astype(int)
+
         print("Actions :")
         for i in range(len(action[0])):
             print(self.stockUniverse[i], " : ", action[0][i])
         while True:
             resp = input("Proceed ? (y/n)")
-            if resp == "y":
+            if resp == "y" or resp == "":
                 break
             else:
                 sys.exit()
-                
+
+        action = (action * self.max_stocks).astype(int)        
         self.stocks_cd += 1
         if self.turbulence_bool == 0:
             min_action = int(self.max_stocks*0.7)  # stock_cd
