@@ -125,7 +125,6 @@ class Alpaca():
         print("Actions :")
         for i in range(len(action[0])):
             print(self.stockUniverse[i], " : ", action[0][i])
-        time.sleep(10)
         while True:
             resp = input("Proceed ? (y/n)")
             if resp == "y":
