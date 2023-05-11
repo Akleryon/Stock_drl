@@ -93,8 +93,10 @@ class Alpaca():
     
     def awaitMarketOpen(self):
         isOpen = self.alpaca.get_clock().is_open
-
+        timeToOpen = 0
         while(not isOpen):
+            if timeToOpen == 2:
+                break
             clock = self.alpaca.get_clock()
             openingTime = clock.next_open.replace(tzinfo=datetime.timezone.utc).timestamp()
             currTime = clock.timestamp.replace(tzinfo=datetime.timezone.utc).timestamp()
