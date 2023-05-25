@@ -150,7 +150,7 @@ class Alpaca():
             for index in sell:  # sell_index:
                 if self.stocks[index] > 0:   
                     sell_num_shares = abs(self.max_stocks//action[0][index])*100 
-                    qty =  abs((int(sell_num_shares*0.01*self.stocks[index]))//2)
+                    qty =  abs(int(sell_num_shares*0.01*self.stocks[index]))
                 else: 
                     sell_num_shares = abs(action[0][index])
                     qty = abs(int(sell_num_shares))
